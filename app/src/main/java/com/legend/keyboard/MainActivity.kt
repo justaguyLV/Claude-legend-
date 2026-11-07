@@ -34,30 +34,71 @@ class MainActivity : Activity() {
         fun sw(t: String, key: String, def: Boolean): Switch {
             val v = Switch(this)
             v.text = t; v.setTextColor(Color.WHITE); v.isChecked = p.getBoolean(key, def)
+            v.setPadding(0, dp(6), 0, dp(6))
             v.setOnCheckedChangeListener { _, on -> p.edit().putBoolean(key, on).apply() }
             return v
         }
+        val accent = 0xFF00E5FF.toInt()
 
-        root.addView(tv("⌨️ Legend Keyboard", 28f, 0xFF00E5FF.toInt()))
-        root.addView(tv("كيبورد أسطوري: عربي وإنجليزي، ثيمات، هزاز، إيموجي، وشفت ذكي.", 14f))
+        root.addView(tv("⌨️ Legend Keyboard", 28f, accent))
+        root.addView(tv("كيبورد أسطوري: عربي وإنجليزي، قاموس وتصحيح تلقائي، حافظة ذكية، تعديل النص، إيموجي، وثيمات.", 14f))
         root.addView(btn("1) تفعيل الكيبورد") { startActivity(Intent(Settings.ACTION_INPUT_METHOD_SETTINGS)) })
         root.addView(btn("2) اختيار الكيبورد") {
             (getSystemService(INPUT_METHOD_SERVICE) as InputMethodManager).showInputMethodPicker()
         })
-        root.addView(tv("الثيم", 18f, 0xFF00E5FF.toInt()))
+
+        root.addView(tv("الثيم", 18f, accent))
         Themes.all.forEachIndexed { i, t ->
             root.addView(btn(t.name) {
                 p.edit().putInt("theme", i).apply()
                 Toast.makeText(this, "تم اختيار ${t.name}", Toast.LENGTH_SHORT).show()
             })
         }
+
+        root.addView(tv("الكتابة الذكية", 18f, accent))
+        root.addView(sw("اقتراحات الكلمات (عربي/إنجليزي)", "suggest", true))
+        root.addView(sw("التصحيح التلقائي (الرجوع يلغيه)", "autocorrect", true))
+        root.addView(sw("مسافتين = نقطة ومسافة", "dblspace", true))
+        root.addView(sw("حرف كبير تلقائي بأول الجملة", "autocap", true))
+
+        root.addView(tv("الحافظة", 18f, accent))
+        root.addView(sw("حفظ سجل الحافظة (📋 في الكيبورد)", "clip", true))
+        root.addView(btn("مسح سجل الحافظة") {
+            p.edit().putString("clips", "[]").putInt("ep_clips", p.getInt("ep_clips", 0) + 1).apply()
+            Toast.makeText(this, "تم مسح الحافظة", Toast.LENGTH_SHORT).show()
+        })
+
+        root.addView(tv("الشكل", 18f, accent))
+        root.addView(sw("صف أرقام دائم", "numrow", false))
         root.addView(sw("الهزاز عند الضغط", "haptic", true))
         root.addView(sw("صوت الضغط", "sound", false))
-        root.addView(tv("جرّب هنا", 18f, 0xFF00E5FF.toInt()))
+        root.addView(tv("حجم المفاتيح", 14f))
+        val rg = RadioGroup(this)
+        rg.orientation = RadioGroup.HORIZONTAL
+        val names = listOf("صغير", "وسط", "كبير")
+        val cur = p.getInt("hscale", 1)
+        names.forEachIndexed { i, n ->
+            val rb = RadioButton(this)
+            rb.id = 100 + i; rb.text = n; rb.setTextColor(Color.WHITE); rb.isChecked = i == cur
+            rg.addView(rb)
+        }
+        rg.setOnCheckedChangeListener { _, id -> p.edit().putInt("hscale", id - 100).apply() }
+        root.addView(rg)
+
+        root.addView(btn("مسح الكلمات المتعلَّمة") {
+            p.edit().putString("words", "").putInt("ep_words", p.getInt("ep_words", 0) + 1).apply()
+            Toast.makeText(this, "تم مسح القاموس الشخصي", Toast.LENGTH_SHORT).show()
+        })
+
+        root.addView(tv("جرّب هنا", 18f, accent))
         val et = EditText(this)
         et.hint = "اكتب هنا..."; et.setTextColor(Color.WHITE); et.setHintTextColor(0x88FFFFFF.toInt())
         root.addView(et)
-        root.addView(tv("ملاحظة: اضغط مطولاً على المسافة لتبديل الكيبورد.", 12f, 0x99FFFFFF.toInt()))
+        root.addView(tv(
+            "نصائح: اضغط مطولاً على أي حرف للأحرف البديلة والأرقام • اسحب على المسافة لتحريك المؤشر • " +
+                "اضغط مطولاً على المسافة لتبديل الكيبورد • ✏️ لوحة التعديل (تحديد/نسخ/لصق) • 📋 سجل الحافظة.",
+            12f, 0x99FFFFFF.toInt()
+        ))
 
         val sv = ScrollView(this)
         sv.setBackgroundColor(0xFF120B2E.toInt())
