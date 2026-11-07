@@ -196,6 +196,7 @@ def main():
         sh("input swipe 540 1700 540 900 500"); time.sleep(2)
         sh("input swipe 540 1700 540 900 500"); time.sleep(2)
         # --- download the APK in Chrome
+        sh("cmd appops set com.android.chrome REQUEST_INSTALL_PACKAGES allow")
         sh("rm -f /sdcard/Download/*.apk /sdcard/Download/*.crdownload")
         sh(f'am start -a android.intent.action.VIEW -d "{url}" {cr}')
         time.sleep(4)
@@ -219,23 +220,28 @@ def main():
             apkname = "termux.apk"
         time.sleep(3)
 
-        # --- install (UI first, fallback to pm)
-        sh("cmd appops set com.android.chrome REQUEST_INSTALL_PACKAGES allow")
-        uri = "file:///sdcard/Download/" + urllib.parse.quote(apkname)
-        sh(f'am start -a android.intent.action.VIEW -t application/vnd.android.package-archive -d "{uri}"')
-        time.sleep(4)
+        # --- install: tap Chrome's "Open" on the finished download -> system installer
+        installed = lambda: "package:com.termux" in sh("pm list packages com.termux")
+        for _ in range(6):
+            if "com.termux" in focus() or "packageinstaller" in focus().lower():
+                break
+            if click_any(["Open"]):
+                break
+            time.sleep(1)
+        time.sleep(3)
         shot("t4.png")
-        end = time.time() + 70
+        end = time.time() + 90
         while time.time() < end:
             if "com.termux" in focus():
                 break
             click_any(["Install", "Install anyway", "Update", "Open"])
             time.sleep(3)
         if "com.termux" not in focus():
-            log("UI install did not finish; focus:", focus())
+            log("UI install did not finish; focus:", focus(), "installed:", installed())
             shot("t4b.png")
-            if "package:com.termux" not in sh("pm list packages com.termux"):
-                log(sh(f'pm install -r -g "/sdcard/Download/{apkname}"'))
+            if not installed():
+                sh(f'cp "/sdcard/Download/{apkname}" /data/local/tmp/termux.apk')
+                log(sh("pm install -r -g /data/local/tmp/termux.apk"))
             sh("am start -n com.termux/.app.TermuxActivity")
         time.sleep(3)
         shot("t5.png")
