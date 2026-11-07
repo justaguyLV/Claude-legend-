@@ -184,6 +184,9 @@ def install_local():
     return "package:com.instagram.android" in sh("pm list packages com.instagram.android")
 
 def main():
+    for _f in ("ig_fetch_out.txt",):
+        if os.path.exists(_f):
+            log("--- " + _f); log(open(_f).read()[-2500:]); log("--- end")
     log(subprocess.run(["adb", "root"], capture_output=True, text=True).stdout.strip())
     time.sleep(3)
     subprocess.run(["adb", "wait-for-device"])

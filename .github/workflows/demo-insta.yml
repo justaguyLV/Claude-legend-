@@ -23,7 +23,10 @@ jobs:
       - name: Tools
         run: sudo apt-get update -y && sudo apt-get install -y ffmpeg python3-pil
       - name: Fetch Instagram APK (apkmirror, then fallbacks)
-        run: python3 demo/fetch_insta.py || true
+        run: |
+          python3 demo/fetch_insta.py > ig_fetch_out.txt 2>&1 || echo "fetch exit $?" >> ig_fetch_out.txt
+          ls -la ig* >> ig_fetch_out.txt 2>&1 || true
+          cat ig_fetch_out.txt
       - name: Enable KVM
         run: |
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
@@ -52,6 +55,7 @@ jobs:
             demo_insta.mp4
             insta_debug.txt
             ig_fetch_log.txt
+            ig_fetch_out.txt
             i*.png
       - uses: softprops/action-gh-release@v2
         if: always() && (hashFiles('demo_insta.mp4') != '' || hashFiles('insta_debug.txt') != '')
@@ -64,4 +68,5 @@ jobs:
             demo_insta.mp4
             insta_debug.txt
             ig_fetch_log.txt
+            ig_fetch_out.txt
             i*.png
