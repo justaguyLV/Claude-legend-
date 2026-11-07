@@ -22,9 +22,15 @@ jobs:
         run: gradle assembleDebug --no-daemon
       - name: Tools
         run: sudo apt-get update -y && sudo apt-get install -y ffmpeg python3-pil
-      - name: Fetch Instagram APK (apkmirror, then fallbacks)
+      - name: Get Instagram (from release, else download)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          python3 demo/fetch_insta.py > ig_fetch_out.txt 2>&1 || echo "fetch exit $?" >> ig_fetch_out.txt
+          if gh release download build-2 -R "$GITHUB_REPOSITORY" -p '*instagram*.apk*' -O ig.apkm --clobber > ig_fetch_out.txt 2>&1; then
+            echo ig.apkm > ig_file.txt
+          else
+            python3 demo/fetch_insta.py >> ig_fetch_out.txt 2>&1 || echo "fetch exit $?" >> ig_fetch_out.txt
+          fi
           ls -la ig* >> ig_fetch_out.txt 2>&1 || true
           cat ig_fetch_out.txt
       - name: Enable KVM
