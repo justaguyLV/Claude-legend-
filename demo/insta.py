@@ -224,28 +224,21 @@ def login_flow():
     txt = screen_text()
     log("login: screen after submit:", txt[:600])
     if "approval" in txt.lower() or "other device" in txt.lower():
-        log("login: 2fa prompt detected, trying 'Try another way'")
-        if click_any(["Try another way"]):
-            time.sleep(4)
-            shot("i9b.png")
-            opts = screen_text()
-            log("login: other-way options:", opts[:600])
-            picked = click_any(["WhatsApp", "Send via WhatsApp", "Message rexo._4 on WhatsApp"])
-            log("login: picked WhatsApp option:", picked)
-            if not picked:
-                nodes = [n for n in ui_nodes() if "whatsapp" in norm(n["text"] + " " + n["desc"])]
-                if nodes:
-                    tap(nodes[0]["cx"], nodes[0]["cy"])
-                    picked = True
-                    log("login: tapped WhatsApp node by text match")
-            time.sleep(4)
-            shot("i9c.png")
-            after = screen_text()
-            log("login: screen after choosing WhatsApp:", after[:600])
-            if picked:
-                log("WHATSAPP_SENT: yes -- check WhatsApp for the Instagram code/approval message now")
-            else:
-                log("WHATSAPP_SENT: no -- WhatsApp option not found on this screen")
+        log("APPROVAL_PROMPT: shown -- open Instagram on your phone now and approve the login request")
+        end = time.time() + 170
+        n = 0
+        while time.time() < end:
+            t2 = screen_text()
+            if "approval" not in t2.lower() and "other device" not in t2.lower():
+                log("login: approval cleared, screen now:", t2[:300])
+                break
+            n += 1
+            if n % 4 == 0:
+                shot(f"i9w{n}.png")
+                log("login: still waiting for approval...", int(end - time.time()), "s left")
+            time.sleep(5)
+        else:
+            log("login: approval timed out")
 
     for i in range(4):
         c = click_any(["Not now", "Not Now", "Skip", "Allow", "OK", "Wait"])
