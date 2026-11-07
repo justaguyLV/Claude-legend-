@@ -1,4 +1,5 @@
-import glob, json, re, subprocess
+import glob, json, re, subprocess, sys
+OUT = sys.argv[1] if len(sys.argv) > 1 else "demo_termux.mp4"
 
 segs = sorted(glob.glob("seg_*.mp4"), key=lambda p: int(re.findall(r"\d+", p)[0]))
 print("segments:", segs)
@@ -30,4 +31,4 @@ print("duration", dur, "parts", parts)
 fc = ";".join(f"[0:v]trim=start={a:.2f}:end={b:.2f},setpts=(PTS-STARTPTS)/{f}[v{i}]" for i, (a, b, f) in enumerate(parts))
 fc += ";" + "".join(f"[v{i}]" for i in range(len(parts))) + f"concat=n={len(parts)}:v=1:a=0[out]"
 subprocess.run(["ffmpeg", "-y", "-i", "full.mp4", "-filter_complex", fc, "-map", "[out]", "-c:v", "libx264", "-crf", "27",
-                "-preset", "veryfast", "-pix_fmt", "yuv420p", "-movflags", "+faststart", "demo_termux.mp4"], check=True)
+                "-preset", "veryfast", "-pix_fmt", "yuv420p", "-movflags", "+faststart", OUT], check=True)

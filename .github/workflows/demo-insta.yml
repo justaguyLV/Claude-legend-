@@ -1,0 +1,63 @@
+name: Demo Instagram
+on:
+  push:
+    branches: [claude-alt-v1.1]
+    paths: ['demo/insta.py', '.github/workflows/demo-insta.yml']
+permissions:
+  contents: write
+jobs:
+  demo:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: 8.9
+      - name: Build debug APK
+        run: gradle assembleDebug --no-daemon
+      - name: Tools
+        run: sudo apt-get update -y && sudo apt-get install -y ffmpeg python3-pil
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Emulator + record
+        uses: reactivecircus/android-emulator-runner@v2
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          api-level: 34
+          target: google_apis
+          arch: x86_64
+          profile: pixel_6
+          disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none -camera-front none
+          script: python3 demo/insta.py
+      - name: Encode video
+        if: always()
+        run: python3 demo/post.py demo_insta.mp4
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: insta-demo
+          path: |
+            demo_insta.mp4
+            insta_debug.txt
+            i*.png
+      - uses: softprops/action-gh-release@v2
+        if: always() && (hashFiles('demo_insta.mp4') != '' || hashFiles('insta_debug.txt') != '')
+        with:
+          tag_name: insta-${{ github.run_number }}
+          target_commitish: ${{ github.sha }}
+          name: Instagram demo ${{ github.run_number }}
+          prerelease: true
+          files: |
+            demo_insta.mp4
+            insta_debug.txt
+            i*.png
