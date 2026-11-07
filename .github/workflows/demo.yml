@@ -49,9 +49,10 @@ jobs:
           name: demo-output
           path: |
             demo.mp4
+            demo_debug.txt
             shot*.png
       - uses: softprops/action-gh-release@v2
-        if: always() && hashFiles('demo.mp4') != ''
+        if: always() && (hashFiles('demo.mp4') != '' || hashFiles('demo_debug.txt') != '')
         with:
           tag_name: demo-${{ github.run_number }}
           target_commitish: ${{ github.sha }}
@@ -59,4 +60,5 @@ jobs:
           prerelease: true
           files: |
             demo.mp4
+            demo_debug.txt
             shot*.png

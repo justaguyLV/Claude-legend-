@@ -2,6 +2,13 @@ import io, subprocess, sys, time
 from PIL import Image
 
 PKG = "com.legend.keyboard"
+DBG = open("demo_debug.txt", "w")
+
+def log(*a):
+    line = " ".join(str(x) for x in a)
+    print(line, flush=True)
+    DBG.write(line + "\n"); DBG.flush()
+
 TEXT = "كلود اسطورة و عم كل ذكاء اصطناعي"
 
 def shell(cmd):
@@ -54,14 +61,23 @@ def pos(label, top, kbh, W):
     raise KeyError(label)
 
 def main():
-    subprocess.run(["adb", "install", "-r", "app/build/outputs/apk/debug/app-debug.apk"], check=True)
-    shell(f"ime enable {PKG}/.LegendIME")
-    shell(f"ime set {PKG}/.LegendIME")
+    log(subprocess.run(["adb", "install", "-r", "app/build/outputs/apk/debug/app-debug.apk"], capture_output=True, text=True))
+    ime = f"{PKG}/.LegendIME"
+    for _ in range(15):
+        lst = shell("ime list -a -s")
+        log("ime list:", lst.replace("\n", " | "))
+        if ime in lst:
+            break
+        time.sleep(2)
+    log("enable:", shell(f"ime enable {ime}"))
+    log("set:", shell(f"ime set {ime}"))
+    shell(f"settings put secure enabled_input_methods {ime}")
+    shell(f"settings put secure default_input_method {ime}")
     shell("settings put secure show_ime_with_hard_keyboard 1")
+    log("default IME:", shell("settings get secure default_input_method"))
     shell("input keyevent KEYCODE_WAKEUP")
     shell("wm dismiss-keyguard")
     time.sleep(1)
-    print("current IME:", shell("settings get secure default_input_method"))
 
     rec = subprocess.Popen(["adb", "shell", "screenrecord", "--size", "720x1600",
                             "--bit-rate", "5000000", "--time-limit", "170", "/sdcard/demo.mp4"])
@@ -70,12 +86,17 @@ def main():
     try:
         shell(f"am start -n {PKG}/.DemoActivity")
         time.sleep(5)
-        img = shot("shot0.png")
-        W, H = img.size
-        length, top, bottom = find_keyboard(img)
-        print("screen", W, H, "keyboard run", length, top, bottom)
-        if length < H * 0.15:
-            print("keyboard not detected")
+        for attempt in range(3):
+            img = shot("shot0.png")
+            W, H = img.size
+            length, top, bottom = find_keyboard(img)
+            log("attempt", attempt, "screen", W, H, "keyboard run", length, top, bottom)
+            log("IME in use:", shell("dumpsys input_method | grep -E 'mCurMethodId|mCurId' | head -3"))
+            if length >= H * 0.15:
+                break
+            time.sleep(3)
+        else:
+            log("keyboard not detected")
             return
         kbh = length
         time.sleep(1.5)
