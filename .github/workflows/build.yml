@@ -1,7 +1,7 @@
 name: Build APK
 on:
   push:
-    branches: [main]
+    branches: [claude-alt-v1.1]
   workflow_dispatch:
 permissions:
   contents: write
@@ -27,6 +27,8 @@ jobs:
           path: LegendKeyboard.apk
       - uses: softprops/action-gh-release@v2
         with:
-          tag_name: build-${{ github.run_number }}
-          name: Legend Keyboard build ${{ github.run_number }}
+          tag_name: alt-${{ github.run_number }}
+          target_commitish: ${{ github.sha }}
+          prerelease: true
+          name: Legend Keyboard (Claude build) ${{ github.run_number }}
           files: LegendKeyboard.apk
