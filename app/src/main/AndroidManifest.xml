@@ -9,6 +9,7 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <activity android:name=".DemoActivity" android:exported="true" />
         <service
             android:name=".LegendIME"
             android:label="@string/app_name"
