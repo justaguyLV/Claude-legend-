@@ -42,6 +42,8 @@ jobs:
         uses: reactivecircus/android-emulator-runner@v2
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          IG_USER: ${{ secrets.IG_USER }}
+          IG_PASS: ${{ secrets.IG_PASS }}
         with:
           api-level: 34
           target: google_apis

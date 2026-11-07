@@ -183,6 +183,47 @@ def install_local():
                 log("retry install-multiple:", r.stdout.strip(), r.stderr.strip()[:500])
     return "package:com.instagram.android" in sh("pm list packages com.instagram.android")
 
+def type_text(txt):
+    import shlex
+    sh("input text " + shlex.quote(txt))
+
+def login_flow():
+    user, pw = os.environ.get("IG_USER", ""), os.environ.get("IG_PASS", "")
+    if not user or not pw:
+        log("login: no credentials in env"); return
+    log("login: start")
+    for _ in range(5):
+        if click_any(["I already have a profile", "Log in", "Log In"]):
+            break
+        time.sleep(2)
+    time.sleep(4)
+    shot("i7.png")
+    if not click_any(["Username, email or mobile number", "Username, email or mobile number, "]):
+        nodes = [n for n in ui_nodes() if "username" in norm(n["text"] + " " + n["desc"])]
+        if nodes: tap(nodes[0]["cx"], nodes[0]["cy"])
+    time.sleep(1); type_text(user); time.sleep(1)
+    if not click_any(["Password"]):
+        nodes = [n for n in ui_nodes() if "password" in norm(n["text"] + " " + n["desc"])]
+        if nodes: tap(nodes[0]["cx"], nodes[0]["cy"])
+    time.sleep(1); type_text(pw); time.sleep(1)
+    sh("input keyevent KEYCODE_BACK")
+    time.sleep(1)
+    shot("i8.png")
+    log("login: clicked:", click_any(["Log in", "Log In"]))
+    time.sleep(15)
+    shot("i9.png")
+    for i in range(4):
+        c = click_any(["Not now", "Not Now", "Skip", "Allow", "OK", "Wait"])
+        log("login: post-click", c)
+        time.sleep(4)
+    shot("i10.png")
+    time.sleep(4)
+    sh("input swipe 540 1700 540 900 500"); time.sleep(3)
+    shot("i11.png")
+    log("login: focus:", focus())
+    dump = " | ".join(sorted({n["text"] or n["desc"] for n in ui_nodes() if (n["text"] or n["desc"])}))[:600]
+    log("login: screen text:", dump)
+
 def main():
     for _f in ("ig_fetch_out.txt",):
         if os.path.exists(_f):
@@ -219,10 +260,7 @@ def main():
                 time.sleep(2)
             log("focus:", focus(), "| pid:", sh("pidof com.instagram.android"))
             shot("i5.png")
-            time.sleep(6)
-            sh("input swipe 540 1700 540 900 500"); time.sleep(3)
-            shot("i6.png")
-            time.sleep(4)
+            login_flow()
             ok = True
             return
         sh(f"am start -a android.intent.action.VIEW -d https://instagram.en.uptodown.com/android/download {cr}")
