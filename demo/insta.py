@@ -217,6 +217,36 @@ def login_flow():
     log("login: clicked:", click_any(["Log in", "Log In"]))
     time.sleep(15)
     shot("i9.png")
+
+    def screen_text():
+        return " | ".join(sorted({n["text"] or n["desc"] for n in ui_nodes() if (n["text"] or n["desc"])}))
+
+    txt = screen_text()
+    log("login: screen after submit:", txt[:600])
+    if "approval" in txt.lower() or "other device" in txt.lower():
+        log("login: 2fa prompt detected, trying 'Try another way'")
+        if click_any(["Try another way"]):
+            time.sleep(4)
+            shot("i9b.png")
+            opts = screen_text()
+            log("login: other-way options:", opts[:600])
+            picked = click_any(["WhatsApp", "Send via WhatsApp", "Message rexo._4 on WhatsApp"])
+            log("login: picked WhatsApp option:", picked)
+            if not picked:
+                nodes = [n for n in ui_nodes() if "whatsapp" in norm(n["text"] + " " + n["desc"])]
+                if nodes:
+                    tap(nodes[0]["cx"], nodes[0]["cy"])
+                    picked = True
+                    log("login: tapped WhatsApp node by text match")
+            time.sleep(4)
+            shot("i9c.png")
+            after = screen_text()
+            log("login: screen after choosing WhatsApp:", after[:600])
+            if picked:
+                log("WHATSAPP_SENT: yes -- check WhatsApp for the Instagram code/approval message now")
+            else:
+                log("WHATSAPP_SENT: no -- WhatsApp option not found on this screen")
+
     for i in range(4):
         c = click_any(["Not now", "Not Now", "Skip", "Allow", "OK", "Wait"])
         log("login: post-click", c)
@@ -226,8 +256,7 @@ def login_flow():
     sh("input swipe 540 1700 540 900 500"); time.sleep(3)
     shot("i11.png")
     log("login: focus:", focus())
-    dump = " | ".join(sorted({n["text"] or n["desc"] for n in ui_nodes() if (n["text"] or n["desc"])}))[:600]
-    log("login: screen text:", dump)
+    log("login: screen text:", screen_text()[:600])
 
 def main():
     for _f in ("ig_fetch_out.txt",):
