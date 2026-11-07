@@ -2,7 +2,7 @@ name: Demo Instagram
 on:
   push:
     branches: [claude-alt-v1.1]
-    paths: ['demo/insta.py', '.github/workflows/demo-insta.yml']
+    paths: ['demo/insta.py', 'demo/fetch_insta.py', '.github/workflows/demo-insta.yml']
 permissions:
   contents: write
 jobs:
@@ -22,6 +22,8 @@ jobs:
         run: gradle assembleDebug --no-daemon
       - name: Tools
         run: sudo apt-get update -y && sudo apt-get install -y ffmpeg python3-pil
+      - name: Fetch Instagram APK (apkmirror, then fallbacks)
+        run: python3 demo/fetch_insta.py || true
       - name: Enable KVM
         run: |
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
@@ -49,6 +51,7 @@ jobs:
           path: |
             demo_insta.mp4
             insta_debug.txt
+            ig_fetch_log.txt
             i*.png
       - uses: softprops/action-gh-release@v2
         if: always() && (hashFiles('demo_insta.mp4') != '' || hashFiles('insta_debug.txt') != '')
@@ -60,4 +63,5 @@ jobs:
           files: |
             demo_insta.mp4
             insta_debug.txt
+            ig_fetch_log.txt
             i*.png

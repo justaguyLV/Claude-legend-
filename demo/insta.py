@@ -129,7 +129,7 @@ def pos(label, top, kbh, W):
     raise KeyError(label)
 
 DISMISS = ["Don't allow", "Not now", "No thanks", "Got it", "Skip", "No, thanks"]
-DL_BTNS = ["Download anyway", "Keep", "Download", "Continue", "Allow"]
+DL_BTNS = ["Wait", "Download anyway", "Keep", "Download", "Continue", "Allow"]
 
 def apk_url():
     req = urllib.request.Request("https://api.github.com/repos/termux/termux-app/releases/latest",
@@ -157,6 +157,32 @@ def install_bundle(name):
     r = subprocess.run(["adb", "install-multiple", "-r", "-g"] + apks, capture_output=True, text=True)
     log("install-multiple:", r.stdout.strip(), r.stderr.strip()[:500])
 
+def install_local():
+    import os, glob, zipfile, shutil
+    if not os.path.exists("ig_file.txt"):
+        return False
+    f = open("ig_file.txt").read().strip()
+    if not os.path.exists(f):
+        return False
+    log("local file:", f, os.path.getsize(f))
+    if f.endswith(".apk"):
+        r = subprocess.run(["adb", "install", "-r", "-g", f], capture_output=True, text=True, timeout=300)
+        log("install:", r.stdout.strip(), r.stderr.strip()[:500])
+    else:
+        shutil.rmtree("igx", ignore_errors=True)
+        zipfile.ZipFile(f).extractall("igx")
+        apks = sorted(glob.glob("igx/**/*.apk", recursive=True))
+        log("bundle apks:", [os.path.basename(a) for a in apks])
+        r = subprocess.run(["adb", "install-multiple", "-r", "-g"] + apks, capture_output=True, text=True, timeout=300)
+        log("install-multiple:", r.stdout.strip(), r.stderr.strip()[:500])
+        if "Success" not in r.stdout:
+            base = [a for a in apks if os.path.basename(a) in ("com.instagram.android.apk", "base.apk")]
+            keep = base + [a for a in apks if re.search(r"arm64|x86_64|xxhdpi|xhdpi|en\.apk|nodpi", os.path.basename(a)) and a not in base]
+            if keep:
+                r = subprocess.run(["adb", "install-multiple", "-r", "-g"] + keep, capture_output=True, text=True, timeout=300)
+                log("retry install-multiple:", r.stdout.strip(), r.stderr.strip()[:500])
+    return "package:com.instagram.android" in sh("pm list packages com.instagram.android")
+
 def main():
     log(subprocess.run(["adb", "root"], capture_output=True, text=True).stdout.strip())
     time.sleep(3)
@@ -180,6 +206,22 @@ def main():
         shot("i0.png")
         sh("cmd appops set com.android.chrome REQUEST_INSTALL_PACKAGES allow")
         sh("rm -f /sdcard/Download/*")
+        if install_local():
+            log("installed via adb: True")
+            shot("i4.png")
+            sh("monkey -p com.instagram.android -c android.intent.category.LAUNCHER 1")
+            time.sleep(12)
+            for _ in range(4):
+                click_any(["Wait", "Don't allow", "Allow", "Not now", "OK"])
+                time.sleep(2)
+            log("focus:", focus(), "| pid:", sh("pidof com.instagram.android"))
+            shot("i5.png")
+            time.sleep(6)
+            sh("input swipe 540 1700 540 900 500"); time.sleep(3)
+            shot("i6.png")
+            time.sleep(4)
+            ok = True
+            return
         sh(f"am start -a android.intent.action.VIEW -d https://instagram.en.uptodown.com/android/download {cr}")
         time.sleep(8)
         for _ in range(3):
