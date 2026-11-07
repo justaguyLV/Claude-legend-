@@ -183,8 +183,13 @@ def install_local():
                 log("retry install-multiple:", r.stdout.strip(), r.stderr.strip()[:500])
     return "package:com.instagram.android" in sh("pm list packages com.instagram.android")
 
+def clear_field():
+    sh("input keyevent KEYCODE_MOVE_END")
+    sh("input keyevent " + " ".join(["KEYCODE_DEL"] * 40))
+
 def type_text(txt):
     import shlex
+    clear_field()
     sh("input text " + shlex.quote(txt))
 
 def login_flow():
